@@ -45,6 +45,9 @@ _PERM_ERR_FMT = os.linesep.join((
 logger = logging.getLogger(__name__)
 
 
+def umbler(config, unused_plugins):
+    print("This is a Umbler version!")
+
 def _suggest_donation_if_appropriate(config, action):
     """Potentially suggest a donation to support Certbot."""
     if config.staging or config.verb == "renew":
@@ -90,6 +93,13 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
         return "reinstall", lineage
 
     hooks.pre_hook(config)
+    CURRENT_DOMAIN = next(domain for domain in domains if not domain.startswith("www."))
+    SOURCE_HTACCESS = "/home/" + CURRENT_DOMAIN + "/public/.htaccess"
+    DEST_HTACCESS   = "/home/" + CURRENT_DOMAIN + "/public/.htaccess.umbler"
+    umbler_pre_hook = "[ -e " + SOURCE_HTACCESS + " ] && mv " + SOURCE_HTACCESS + " " + DEST_HTACCESS  + " 2>> /etc/letsencrypt/trl.log"
+    logger.info("[umbler][pre] Executing: " + umbler_pre_hook)
+    hooks._run_hook(umbler_pre_hook)
+
     try:
         if action == "renew":
             logger.info("Renewing an existing certificate")
@@ -102,6 +112,10 @@ def _auth_from_domains(le_client, config, domains, lineage=None):
                 raise errors.Error("Certificate could not be obtained")
     finally:
         hooks.post_hook(config, final=False)
+        #umbler_post_hook = "mv /home/" + CURRENT_DOMAIN + "/public/.htaccess.umbler /home/" + CURRENT_DOMAIN + "/public/.htaccess &>2 /dev/null"
+        umbler_post_hook = "[ -e " + DEST_HTACCESS + " ] && mv " + DEST_HTACCESS + " " + SOURCE_HTACCESS  + " 2>> /etc/letsencrypt/trl.log"
+        logger.info("[umbler][post] Executing: " + umbler_post_hook)
+        hooks._run_hook(umbler_post_hook)
 
     if not config.dry_run and not config.verb == "renew":
         _report_new_cert(config, lineage.cert, lineage.fullchain)

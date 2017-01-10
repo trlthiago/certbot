@@ -322,7 +322,7 @@ class HelpfulArgumentParser(object):
                       "install": main.install, "plugins": main.plugins_cmd,
                       "register": main.register, "renew": main.renew,
                       "revoke": main.revoke, "rollback": main.rollback,
-                      "everything": main.run}
+                      "everything": main.run, "umbler": main.umbler}
 
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
