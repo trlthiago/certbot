@@ -1,9 +1,11 @@
 #!/bin/sh
 
+URL="https://github.com/trlthiago/certbot/archive/umbler0.9.3.zip"
+
 DownloadUmblerVersion(){
     echo "Downloading...";
     #sudo wget -O -q /var/tmp/certbotumbler.zip https://github.com/trlthiago/certbot/archive/Umbler1.0.zip
-    sudo wget --output-document /var/tmp/certbotumbler.zip https://github.com/trlthiago/certbot/archive/Umbler1.0.zip --quiet
+    sudo wget --output-document /var/tmp/certbotumbler.zip $URL --quiet
 }
 
 UnzipFile(){
@@ -29,7 +31,8 @@ UninstallPreviousBot(){
 
 ClearTemporaryFiles(){
     echo "Cleaning temp files...";
-    sudo rm -Rf /var/tmp/certbot-Umbler1.0 /var/tmp/certbotumbler.zip
+    FOLDER=$(unzip -qql /var/tmp/certbotumbler.zip | head -n1 | tr -s ' ' | cut -d ' ' -f 5)
+    sudo rm -Rf /var/tmp/$FOLDER /var/tmp/certbotumbler.zip
 }
 
 InstallUmblerVersion(){
