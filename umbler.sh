@@ -86,5 +86,8 @@ case "$1" in
     --remove)
         UninstallPreviousBot
         RemoveCron;;
+    --download)
+        DownloadUmblerVersion
+        UnzipFile;;
     *) DetectCertbot;;
 esac
