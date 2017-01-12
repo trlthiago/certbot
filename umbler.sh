@@ -29,7 +29,7 @@ UninstallPreviousBot(){
     BINARY=$(command -v "certbot")
     echo "Found $BINARY"
 
-    elif [ -f /etc/redhat-release ]; then
+    if [ -f /etc/redhat-release ]; then
         sudo  yum remove "*certbot*" -y
     fi
 
