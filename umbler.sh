@@ -1,10 +1,10 @@
 #!/bin/sh
 
 URL="https://github.com/trlthiago/certbot/archive/umbler0.9.3.zip"
+#URL="https://github.com/certbot/certbot/archive/v0.10.0.zip"
 
 DownloadUmblerVersion(){
     echo "Downloading...";
-    #sudo wget -O -q /var/tmp/certbotumbler.zip https://github.com/trlthiago/certbot/archive/Umbler1.0.zip
     sudo wget --output-document /var/tmp/certbotumbler.zip $URL --quiet
 }
 
@@ -16,8 +16,13 @@ UnzipFile(){
 InstallBot(){
     echo "Installing...";
     FOLDER=$(unzip -qql /var/tmp/certbotumbler.zip | head -n1 | tr -s ' ' | cut -d ' ' -f 5)
-    INSTALLER="/var/tmp/"$FOLDER"setup.py"
-    sudo python $INSTALLER install
+    INSTALLATION_FOLDER="/var/tmp/"$FOLDER
+    echo "Switching to $INSTALLATION_FOLDER"
+    cd $INSTALLATION_FOLDER
+    #INSTALLER="/var/tmp/"$FOLDER"setup.py"
+    sudo python setup.py clean --all
+    sudo python setup.py install
+    cd -
 }
 
 UninstallPreviousBot(){
