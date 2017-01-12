@@ -1,8 +1,8 @@
 #!/bin/sh
 
-URL="https://github.com/trlthiago/certbot/archive/umbler0.9.3.zip"
+URL="https://github.com/trlthiago/certbot/archive/vUmbler0.9.3.zip"
 #URL="https://github.com/certbot/certbot/archive/v0.10.0.zip"
-##
+
 DownloadUmblerVersion(){
     echo "Downloading...";
     sudo wget --output-document /var/tmp/certbotumbler.zip $URL --quiet
@@ -19,7 +19,6 @@ InstallBot(){
     INSTALLATION_FOLDER="/var/tmp/"$FOLDER
     echo "Switching to $INSTALLATION_FOLDER"
     cd $INSTALLATION_FOLDER
-    #INSTALLER="/var/tmp/"$FOLDER"setup.py"
     sudo python setup.py clean --all
     sudo python setup.py install
     cd -
@@ -29,9 +28,13 @@ UninstallPreviousBot(){
     echo "Uninstalling previous...";
     BINARY=$(command -v "certbot")
     echo "Found $BINARY"
+
+    elif [ -f /etc/redhat-release ]; then
+        sudo  yum remove "*certbot*" -y
+    fi
+
     sudo pip uninstall certbot -y
     sudo rm -f $BINARY
-    #sudo rm -Rf   
 }
 
 ClearTemporaryFiles(){
