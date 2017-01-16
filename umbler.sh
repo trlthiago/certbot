@@ -2,6 +2,7 @@
 
 URL="https://github.com/trlthiago/certbot/archive/vUmbler0.9.3.zip"
 #URL="https://github.com/certbot/certbot/archive/v0.10.0.zip"
+VENV_PATH="/home/umbler/ubpainel/umblerbot"
 
 DownloadUmblerVersion(){
     echo "Downloading...";
@@ -13,14 +14,43 @@ UnzipFile(){
     sudo unzip -qq /var/tmp/certbotumbler.zip -d /var/tmp/
 }
 
+UpgradeSetupTools(){
+    #TODO: check if setuptools>=1.0 is installed
+    SETUPTOOLS=$(yum list installed | grep setuptools)
+    if [[ -z "$SETUPTOOLS" ]]; then
+        echo "setuptools not found on yum."
+        #trying get by python
+        SETUPTOOLS=$($LE_PYTHON -m easy_install --version | awk '{print $2}')
+        if [[ $SETUPTOOLS == 0.* ]]; then
+            eco "found $SETUPTOOLS version. Installing a new version"
+            wget https://bootstrap.pypa.io/ez_setup.py -O - | $LE_PYTHON
+        fi
+    else
+
+        yum remove python-setuptools
+        wget https://bootstrap.pypa.io/ez_setup.py -O - | $LE_PYTHON
+    fi
+}
+
 InstallBot(){
     echo "Installing...";
+
+    #if [ -f /etc/redhat-release ]; then
+    #    UpgradeSetupTools
+    #fi
+    
     FOLDER=$(unzip -qql /var/tmp/certbotumbler.zip | head -n1 | tr -s ' ' | cut -d ' ' -f 5)
     INSTALLATION_FOLDER="/var/tmp/"$FOLDER
     echo "Switching to $INSTALLATION_FOLDER"
     cd $INSTALLATION_FOLDER
-    sudo python setup.py clean --all
-    sudo python setup.py install
+    python setup.py clean --all
+    python setup.py install
+
+    if [ "$?" != "0" ]; then
+        echo "Woops!"
+        exit 1
+    fi
+
     cd -
 }
 
@@ -70,6 +100,54 @@ RemoveCron(){
     sudo sed -i '/certbot/d' /var/spool/cron/root
 }
 
+DeterminePythonVersion() {
+#   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+#     # Break (while keeping the LE_PYTHON value) if found.
+#     command -v "$LE_PYTHON" > /dev/null && break
+#   done
+#   if [ "$?" != "0" ]; then
+#     echo "Cannot find any Pythons; please install one!"
+#     exit 1
+#   fi
+#   echo "Found $LE_PYTHON !"
+#   export LE_PYTHON
+
+#   /usr/bin/python3.5m 
+#   /usr/bin/python 
+#   /usr/bin/python3.5 
+#   /usr/bin/python2.7 
+#   /usr/bin/python2.7-config 
+#   /usr/lib/python3.5 /usr/lib/python2.7 /etc/python /etc/python3.5 /etc/python2.7 /usr/local/lib/python3.5 /usr/local/lib/python2.7 /usr/include/python3.5m /usr/include/python2.7 /usr/share/python /home/umblerbot/bin/python /home/umblerbot/bin/python2.7 /usr/share/man/man1/py
+
+#   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
+#   if [ "$PYVER" -lt 26 ]; then
+#     echo "You have an ancient version of Python entombed in your operating system..."
+#     echo "This isn't going to work; you'll need at least version 2.6."
+#     exit 1
+#   fi
+    LE_PYTHON="/home/umblertbot/bin/python"
+    export LE_PYTHON
+}
+
+CreateEnvironment(){
+    sudo mkdir $VENV_PATH -p
+    sudo virtualenv --no-site-packages umblerbot --python python2
+    echo "We are in: $VIRTUAL_ENV"
+    . $VENV_PATH/bin/activate
+    echo "We are in: $VIRTUAL_ENV"
+    pip install -U setuptools
+    pip install -U pip
+    
+    # if [ -f /etc/debian_version ]; then
+    #     sudo apt-get install libffi-dev -y
+    # elif [ -f /etc/redhat-release ]; then
+    #     sudo yum install libffi-devel -y
+    # else
+    #     echo "It was not possible to determine what SO is running!";
+    # fi
+    InstallUmblerVersion
+}
+
 DetectCertbot(){
     command -v "certbot" > /dev/null 
     if [ "$?" != "0" ]; then
@@ -85,7 +163,23 @@ DetectCertbot(){
                 InstallUmblerVersion;;
         esac
     fi
+
+    if [ -d "$VENV_PATH" ]; then
+        # Will enter here if $DIRECTORY exists, even if it contains spaces
+    else
+        CreateEnvironment
+    fi
 } 
+
+Call(){
+    echo "Estamos em: $VIRTUAL_ENV"
+    . /home/umblerbot/bin/activate
+    echo "Estamos em: $VIRTUAL_ENV"
+    shift
+    certbot $@
+}
+
+DeterminePythonVersion
 
 case "$1" in
     --force)
@@ -97,5 +191,9 @@ case "$1" in
     --download)
         DownloadUmblerVersion
         UnzipFile;;
+    --virtual)
+        CreateEnvironment;;
+    --call)
+        Call $@;;
     *) DetectCertbot;;
 esac
