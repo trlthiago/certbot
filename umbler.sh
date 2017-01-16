@@ -2,7 +2,9 @@
 
 URL="https://github.com/trlthiago/certbot/archive/vUmbler0.9.3.zip"
 #URL="https://github.com/certbot/certbot/archive/v0.10.0.zip"
-VENV_PATH="/home/umbler/ubpainel/umblerbot"
+VENV_NAME="umblerbot"
+BASE_DIR="/home/umbler/ubpainel"
+VENV_PATH="$BASE_DIR/$VENV_NAME"
 
 DownloadUmblerVersion(){
     echo "Downloading...";
@@ -20,15 +22,15 @@ UpgradeSetupTools(){
     if [[ -z "$SETUPTOOLS" ]]; then
         echo "setuptools not found on yum."
         #trying get by python
-        SETUPTOOLS=$($LE_PYTHON -m easy_install --version | awk '{print $2}')
+        SETUPTOOLS=$(python -m easy_install --version | awk '{print $2}')
         if [[ $SETUPTOOLS == 0.* ]]; then
             eco "found $SETUPTOOLS version. Installing a new version"
-            wget https://bootstrap.pypa.io/ez_setup.py -O - | $LE_PYTHON
+            wget https://bootstrap.pypa.io/ez_setup.py -O - | python
         fi
     else
 
         yum remove python-setuptools
-        wget https://bootstrap.pypa.io/ez_setup.py -O - | $LE_PYTHON
+        wget https://bootstrap.pypa.io/ez_setup.py -O - | python
     fi
 }
 
@@ -125,16 +127,26 @@ DeterminePythonVersion() {
 #     echo "This isn't going to work; you'll need at least version 2.6."
 #     exit 1
 #   fi
-    LE_PYTHON="/home/umblertbot/bin/python"
+    LE_PYTHON="/home/umblerbot/bin/python"
     export LE_PYTHON
 }
 
-CreateEnvironment(){
-    sudo mkdir $VENV_PATH -p
-    sudo virtualenv --no-site-packages umblerbot --python python2
+CreateAndDeployVirtualEnvironment(){
+    echo "Creating Virtual Environment..."
+    sudo mkdir $BASE_DIR -p
+    cd $BASE_DIR
+    sudo virtualenv --no-site-packages $VENV_NAME --python python2
     echo "We are in: $VIRTUAL_ENV"
     . $VENV_PATH/bin/activate
-    echo "We are in: $VIRTUAL_ENV"
+
+     if [ "$?" != "0" ]; then
+        echo "Woops! Error to activate the virtualenv :'("
+        exit 1
+    else 
+        echo "We are in: $VIRTUAL_ENV"
+    fi
+    
+
     pip install -U setuptools
     pip install -U pip
     
@@ -151,35 +163,45 @@ CreateEnvironment(){
 DetectCertbot(){
     command -v "certbot" > /dev/null 
     if [ "$?" != "0" ]; then
-        echo "Cannot find any certbot!";
-        InstallUmblerVersion
+        echo "Cannot find any system-based certbot!";
+        if [ "$USING_VENV" = 1 ]; then
+            if [ -d "$VENV_PATH" ]; then
+                #TODO: In the feature, check if it is an update. If it does, we should remove the folder and recreate it.
+                echo "Virtualenv $VENV_PATH already exists!"
+                InstallUmblerVersion
+            else
+                echo "$VENV_PATH doesnt exists!"
+                CreateAndDeployVirtualEnvironment
+            fi
+        else
+            InstallUmblerVersion
+        fi
     else
-        OUTPUT=$(certbot umbler --quiet)
-        case "$OUTPUT" in 
-            *Umbler*|*umbler*) 
-                echo "Everything OK!";;
-            *) 
-                UninstallPreviousBot
-                InstallUmblerVersion;;
-        esac
-    fi
-
-    if [ -d "$VENV_PATH" ]; then
-        # Will enter here if $DIRECTORY exists, even if it contains spaces
-    else
-        CreateEnvironment
+        if [ "$USING_VENV" = 1 ]; then
+            UninstallPreviousBot
+            CreateAndDeployVirtualEnvironment
+        else
+            OUTPUT=$(certbot umbler --quiet)
+            case "$OUTPUT" in 
+                *Umbler*|*umbler*) 
+                    echo "Everything OK!";;
+                *) 
+                    UninstallPreviousBot
+                    InstallUmblerVersion;;
+            esac
+        fi
     fi
 } 
 
 Call(){
-    echo "Estamos em: $VIRTUAL_ENV"
-    . /home/umblerbot/bin/activate
-    echo "Estamos em: $VIRTUAL_ENV"
+    echo "We are in: $VIRTUAL_ENV"
+    . $VENV_PATH/bin/activate
+    echo "We are in: $VIRTUAL_ENV"
     shift
     certbot $@
 }
 
-DeterminePythonVersion
+#DeterminePythonVersion
 
 case "$1" in
     --force)
@@ -192,7 +214,8 @@ case "$1" in
         DownloadUmblerVersion
         UnzipFile;;
     --virtual)
-        CreateEnvironment;;
+        USING_VENV=1
+        DetectCertbot;;
     --call)
         Call $@;;
     *) DetectCertbot;;
