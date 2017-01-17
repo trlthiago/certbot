@@ -2,7 +2,7 @@
 
 URL="https://github.com/trlthiago/certbot/archive/vUmbler0.9.3.zip"
 #URL="https://github.com/certbot/certbot/archive/v0.10.0.zip"
-VENV_NAME="umblerbot"
+VENV_NAME="umblercert"
 BASE_DIR="/home/umbler/ubpainel"
 VENV_PATH="$BASE_DIR/$VENV_NAME"
 
@@ -24,7 +24,7 @@ UpgradeSetupTools(){
         #trying get by python
         SETUPTOOLS=$(python -m easy_install --version | awk '{print $2}')
         if [[ $SETUPTOOLS == 0.* ]]; then
-            eco "found $SETUPTOOLS version. Installing a new version"
+            echo "found $SETUPTOOLS version. Installing a new version"
             wget https://bootstrap.pypa.io/ez_setup.py -O - | python
         fi
     else
@@ -146,7 +146,6 @@ CreateAndDeployVirtualEnvironment(){
         echo "We are in: $VIRTUAL_ENV"
     fi
     
-
     pip install -U setuptools
     pip install -U pip
     
@@ -168,7 +167,8 @@ DetectCertbot(){
             if [ -d "$VENV_PATH" ]; then
                 #TODO: In the feature, check if it is an update. If it does, we should remove the folder and recreate it.
                 echo "Virtualenv $VENV_PATH already exists!"
-                InstallUmblerVersion
+                echo "Everything OK!"
+                #InstallUmblerVersion
             else
                 echo "$VENV_PATH doesnt exists!"
                 CreateAndDeployVirtualEnvironment
@@ -194,9 +194,9 @@ DetectCertbot(){
 } 
 
 Call(){
-    echo "We are in: $VIRTUAL_ENV"
+    #echo "We are in: $VIRTUAL_ENV"
     . $VENV_PATH/bin/activate
-    echo "We are in: $VIRTUAL_ENV"
+    #echo "We are in: $VIRTUAL_ENV"
     shift
     certbot $@
 }
