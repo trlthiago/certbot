@@ -1,12 +1,13 @@
 #!/bin/sh
 
-URL="https://github.com/trlthiago/certbot/archive/vUmbler0.9.3.zip"
+#URL="https://github.com/trlthiago/certbot/archive/vUmbler0.9.3.zip"
 #URL="https://github.com/certbot/certbot/archive/v0.10.0.zip"
+URL="https://github.com/certbot/certbot/archive/v0.10.1.zip"
 VENV_NAME="umblercert"
 BASE_DIR="/home/umbler/ubpainel"
 VENV_PATH="$BASE_DIR/$VENV_NAME"
 
-DownloadUmblerVersion(){
+DownloadNewVersion(){
     echo "Downloading...";
     sudo wget --output-document /var/tmp/certbotumbler.zip $URL --quiet
 }
@@ -37,9 +38,9 @@ UpgradeSetupTools(){
 InstallBot(){
     echo "Installing...";
 
-    #if [ -f /etc/redhat-release ]; then
-    #    UpgradeSetupTools
-    #fi
+    if [ -f /etc/redhat-release ]; then
+        UpgradeSetupTools
+    fi
     
     FOLDER=$(unzip -qql /var/tmp/certbotumbler.zip | head -n1 | tr -s ' ' | cut -d ' ' -f 5)
     INSTALLATION_FOLDER="/var/tmp/"$FOLDER
@@ -56,7 +57,7 @@ InstallBot(){
     cd -
 }
 
-UninstallPreviousBot(){
+UninstallPreviousVersion(){
     echo "Uninstalling previous...";
     BINARY=$(command -v "certbot")
     echo "Found $BINARY"
@@ -75,9 +76,9 @@ ClearTemporaryFiles(){
     sudo rm -Rf /var/tmp/$FOLDER /var/tmp/certbotumbler.zip
 }
 
-InstallUmblerVersion(){
-    echo "Installing Umbler version...";
-    DownloadUmblerVersion
+InstallNewVersion(){
+    echo "Installing new version...";
+    DownloadNewVersion
     UnzipFile
     InstallBot
     ClearTemporaryFiles
@@ -87,8 +88,11 @@ InstallUmblerVersion(){
 ConfigureRenewCron(){
     echo "Configuring Cron...";
     RemoveCron
-    sudo echo "00 05 * * * certbot renew --agree-tos --quiet --no-self-upgrade --renew-hook 'cp \"\$(sudo realpath \$RENEWED_LINEAGE/cert.pem)\" \"\$(sudo realpath \$RENEWED_LINEAGE/cert.pem)-bkp-\$(date +%y-%m-%d_%H:%M:%S)\" && sudo cat \"\$RENEWED_LINEAGE/privkey.pem\" >> \"\$RENEWED_LINEAGE/cert.pem\"' --post-hook \"systemctl reload httpd\"" >> /var/spool/cron/root
+    #sudo echo "00 05 * * * certbot renew --agree-tos --quiet --no-self-upgrade --renew-hook 'cp \"\$(sudo realpath \$RENEWED_LINEAGE/cert.pem)\" \"\$(sudo realpath \$RENEWED_LINEAGE/cert.pem)-bkp-\$(date +%y-%m-%d_%H:%M:%S)\" && sudo cat \"\$RENEWED_LINEAGE/privkey.pem\" >> \"\$RENEWED_LINEAGE/cert.pem\"' --post-hook \"systemctl reload httpd\"" >> /var/spool/cron/root
     
+    sudo echo "00 05 * * * (certbot renew --agree-tos --quiet" >> /var/spool/cron/root; systemctl reload httpd) 
+    
+
     if [ -f /etc/debian_version ]; then
         sudo /etc/init.d/cron restart
     elif [ -f /etc/redhat-release ]; then
@@ -100,35 +104,6 @@ ConfigureRenewCron(){
 
 RemoveCron(){
     sudo sed -i '/certbot/d' /var/spool/cron/root
-}
-
-DeterminePythonVersion() {
-#   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
-#     # Break (while keeping the LE_PYTHON value) if found.
-#     command -v "$LE_PYTHON" > /dev/null && break
-#   done
-#   if [ "$?" != "0" ]; then
-#     echo "Cannot find any Pythons; please install one!"
-#     exit 1
-#   fi
-#   echo "Found $LE_PYTHON !"
-#   export LE_PYTHON
-
-#   /usr/bin/python3.5m 
-#   /usr/bin/python 
-#   /usr/bin/python3.5 
-#   /usr/bin/python2.7 
-#   /usr/bin/python2.7-config 
-#   /usr/lib/python3.5 /usr/lib/python2.7 /etc/python /etc/python3.5 /etc/python2.7 /usr/local/lib/python3.5 /usr/local/lib/python2.7 /usr/include/python3.5m /usr/include/python2.7 /usr/share/python /home/umblerbot/bin/python /home/umblerbot/bin/python2.7 /usr/share/man/man1/py
-
-#   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-#   if [ "$PYVER" -lt 26 ]; then
-#     echo "You have an ancient version of Python entombed in your operating system..."
-#     echo "This isn't going to work; you'll need at least version 2.6."
-#     exit 1
-#   fi
-    LE_PYTHON="/home/umblerbot/bin/python"
-    export LE_PYTHON
 }
 
 CreateAndDeployVirtualEnvironment(){
@@ -159,6 +134,22 @@ CreateAndDeployVirtualEnvironment(){
     InstallUmblerVersion
 }
 
+DetectCertbot2(){
+    command -v "certbot" > /dev/null 
+    if [ "$?" != "0" ]; then
+        SETUPTOOLS=$(yum list installed | grep certbot)
+        if [[ -z "$SETUPTOOLS" ]]; then
+            echo "certbot not found on yum, So it should be new version already."
+            echo "Everything OK!"
+        else
+            UninstallPreviousBot
+            InstallNewVersion
+        fi
+    else
+        InstallNewVersion
+    fi
+}
+
 DetectCertbot(){
     command -v "certbot" > /dev/null 
     if [ "$?" != "0" ]; then
@@ -174,11 +165,11 @@ DetectCertbot(){
                 CreateAndDeployVirtualEnvironment
             fi
         else
-            InstallUmblerVersion
+            InstallNewVersion
         fi
     else
         if [ "$USING_VENV" = 1 ]; then
-            UninstallPreviousBot
+            UninstallPreviousVersion
             CreateAndDeployVirtualEnvironment
         else
             OUTPUT=$(certbot umbler --quiet)
@@ -186,8 +177,8 @@ DetectCertbot(){
                 *Umbler*|*umbler*) 
                     echo "Everything OK!";;
                 *) 
-                    UninstallPreviousBot
-                    InstallUmblerVersion;;
+                    UninstallPreviousVersion
+                    InstallNewVersion;;
             esac
         fi
     fi
@@ -201,22 +192,20 @@ Call(){
     certbot $@
 }
 
-#DeterminePythonVersion
-
 case "$1" in
     --force)
-        UninstallPreviousBot
-        InstallUmblerVersion;;
+        UninstallPreviousVersion
+        InstallNewVersion;;
     --remove)
-        UninstallPreviousBot
+        UninstallPreviousVersion
         RemoveCron;;
     --download)
-        DownloadUmblerVersion
+        DownloadNewVersion
         UnzipFile;;
     --virtual)
         USING_VENV=1
         DetectCertbot;;
     --call)
         Call $@;;
-    *) DetectCertbot;;
+    *) DetectCertbot2;;
 esac
