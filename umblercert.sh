@@ -14,7 +14,7 @@ DownloadNewVersion(){
 
 UnzipFile(){
     echo "Unzipping...";
-    sudo unzip -qq /var/tmp/certbotumbler.zip -d /var/tmp/
+    sudo unzip -qqo /var/tmp/certbotumbler.zip -d /var/tmp/
 }
 
 UpgradeSetupTools(){
@@ -29,8 +29,8 @@ UpgradeSetupTools(){
             wget https://bootstrap.pypa.io/ez_setup.py -O - | python
         fi
     else
-
-        yum remove python-setuptools
+        echo "Removing python-setuptools!!!"
+        yum remove python-setuptools -y
         wget https://bootstrap.pypa.io/ez_setup.py -O - | python
     fi
 }
@@ -46,6 +46,11 @@ InstallBot(){
     INSTALLATION_FOLDER="/var/tmp/"$FOLDER
     echo "Switching to $INSTALLATION_FOLDER"
     cd $INSTALLATION_FOLDER
+
+    python -m easy_install -U requests
+    python -m easy_install -U cryptography
+    python -m easy_install -U pyOpenSSL 
+    
     python setup.py clean --all
     python setup.py install
 
