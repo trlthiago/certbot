@@ -57,15 +57,15 @@ InstallBot(){
     fi
 
     #python -m easy_install -U requests
-    #python -m easy_install -U cryptography
-    #python -m easy_install -U pyOpenSSL 
+    python -m easy_install -U cryptography
+    python -m easy_install -U pyOpenSSL 
 
     sudo yum install python2-pip -y
     pip install -U setuptools
     pip install -U pip
     pip install requests --upgrade
-    pip install pyonpenssl --upgrade
-    
+    #pip install pyonpenssl --upgrade
+
     python setup.py clean --all
     python setup.py install
 
