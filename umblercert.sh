@@ -38,18 +38,33 @@ UpgradeSetupTools(){
 InstallBot(){
     echo "Installing...";
 
-    if [ -f /etc/redhat-release ]; then
-        UpgradeSetupTools
-    fi
-    
+    #if [ -f /etc/redhat-release ]; then
+    #    UpgradeSetupTools
+    #fi
+
     FOLDER=$(unzip -qql /var/tmp/certbotumbler.zip | head -n1 | tr -s ' ' | cut -d ' ' -f 5)
     INSTALLATION_FOLDER="/var/tmp/"$FOLDER
     echo "Switching to $INSTALLATION_FOLDER"
     cd $INSTALLATION_FOLDER
 
-    python -m easy_install -U requests
-    python -m easy_install -U cryptography
-    python -m easy_install -U pyOpenSSL 
+    if [ -f /etc/debian_version ]; then
+        sudo apt-get install libffi-dev -y
+    elif [ -f /etc/redhat-release ]; then
+        sudo yum install libffi-devel -y
+        sudo yum install python-devel -y
+    else
+        echo "It was not possible to determine what SO is running!";
+    fi
+
+    #python -m easy_install -U requests
+    #python -m easy_install -U cryptography
+    #python -m easy_install -U pyOpenSSL 
+
+    sudo yum install python2-pip -y
+    pip install -U setuptools
+    pip install -U pip
+    pip install requests --upgrade
+    pip install pyonpenssl --upgrade
     
     python setup.py clean --all
     python setup.py install
