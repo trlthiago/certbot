@@ -185,10 +185,10 @@ DetectCertbot2(){
 }
 
 InstallAuto(){
-    sudo wget --output-document /var/tmp/certbot-auto $AUTO --quiet
-    sudo chmod +x /var/tmp/certbot-auto
-    /var/tmp/certbot-auto --os-packages-only --non-interactive
-    cp /var/tmp/certbot-auto /usr/bin/certbot-auto
+    sudo wget --output-document /tmp/certbot-auto $AUTO --quiet
+    sudo chmod +x /tmp/certbot-auto
+    /tmp/certbot-auto --non-interactive 
+    cp /tmp/certbot-auto /usr/bin/certbot-auto
 }
 
 DetectCertbot(){
