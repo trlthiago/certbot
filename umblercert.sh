@@ -3,6 +3,8 @@
 #URL="https://github.com/trlthiago/certbot/archive/vUmbler0.9.3.zip"
 #URL="https://github.com/certbot/certbot/archive/v0.10.0.zip"
 URL="https://github.com/certbot/certbot/archive/v0.10.1.zip"
+AUTO="https://raw.githubusercontent.com/certbot/certbot/master/certbot-auto"
+
 VENV_NAME="umblercert"
 BASE_DIR="/home/umbler/ubpainel"
 VENV_PATH="$BASE_DIR/$VENV_NAME"
@@ -43,11 +45,11 @@ InstallBot(){
     echo "Switching to $INSTALLATION_FOLDER"
     cd $INSTALLATION_FOLDER
 
-    ./certbot-auto --os-packages-only
+    ./certbot-auto --os-packages-only --non-interactive
 }
 
 
-InstallBot-old(){
+InstallBotOld(){
     echo "Installing...";
 
     #if [ -f /etc/redhat-release ]; then
@@ -90,7 +92,7 @@ InstallBot-old(){
 }
 
 UninstallPreviousVersion(){
-    echo "Uninstalling previous...";
+    echo "Uninstalling previous version...";
     BINARY=$(command -v "certbot")
     echo "Found $BINARY"
 
@@ -122,7 +124,7 @@ ConfigureRenewCron(){
     RemoveCron
     #sudo echo "00 05 * * * certbot renew --agree-tos --quiet --no-self-upgrade --renew-hook 'cp \"\$(sudo realpath \$RENEWED_LINEAGE/cert.pem)\" \"\$(sudo realpath \$RENEWED_LINEAGE/cert.pem)-bkp-\$(date +%y-%m-%d_%H:%M:%S)\" && sudo cat \"\$RENEWED_LINEAGE/privkey.pem\" >> \"\$RENEWED_LINEAGE/cert.pem\"' --post-hook \"systemctl reload httpd\"" >> /var/spool/cron/root
     
-    sudo echo "00 05 * * 6,0 (certbot renew --agree-tos --quiet; systemctl reload httpd)" >> /var/spool/cron/root 
+    sudo echo "00 05 * * 6,0 (certbot-auto renew --agree-tos --quiet; systemctl reload httpd)" >> /var/spool/cron/root 
     
 
     if [ -f /etc/debian_version ]; then
@@ -174,12 +176,19 @@ DetectCertbot2(){
             echo "certbot not found on yum, So it should be new version already."
             echo "Everything OK!"
         else
-            UninstallPreviousBot
+            UninstallPreviousVersion
             InstallNewVersion
         fi
     else
         InstallNewVersion
     fi
+}
+
+InstallAuto(){
+    sudo wget --output-document /var/tmp/certbot-auto $AUTO --quiet
+    sudo chmod +x /var/tmp/certbot-auto
+    /var/tmp/certbot-auto --os-packages-only --non-interactive
+    cp /var/tmp/certbot-auto /usr/bin/certbot-auto
 }
 
 DetectCertbot(){
@@ -239,5 +248,8 @@ case "$1" in
         DetectCertbot;;
     --call)
         Call $@;;
+    --force-auto)
+        UninstallPreviousVersion
+        InstallAuto;;
     *) DetectCertbot2;;
 esac
