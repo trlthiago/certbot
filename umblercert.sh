@@ -38,6 +38,18 @@ UpgradeSetupTools(){
 InstallBot(){
     echo "Installing...";
 
+    FOLDER=$(unzip -qql /var/tmp/certbotumbler.zip | head -n1 | tr -s ' ' | cut -d ' ' -f 5)
+    INSTALLATION_FOLDER="/var/tmp/"$FOLDER
+    echo "Switching to $INSTALLATION_FOLDER"
+    cd $INSTALLATION_FOLDER
+
+    ./certbot-auto --os-packages-only
+}
+
+
+InstallBot-old(){
+    echo "Installing...";
+
     #if [ -f /etc/redhat-release ]; then
     #    UpgradeSetupTools
     #fi
@@ -57,17 +69,17 @@ InstallBot(){
     fi
 
     #python -m easy_install -U requests
-    python -m easy_install -U cryptography
-    python -m easy_install -U pyOpenSSL 
+    python -m easy_install -U cryptography; if [ "$?" != "0" ]; then echo "Woops!"; exit 1; fi
+    python -m easy_install -U pyOpenSSL; if [ "$?" != "0" ]; then echo "Woops!"; exit 1; fi
 
-    sudo yum install python2-pip -y
-    pip install -U setuptools
-    pip install -U pip
-    pip install requests --upgrade
+    sudo yum install python2-pip -y; if [ "$?" != "0" ]; then echo "Woops!"; exit 1; fi
+    pip install -U setuptools; if [ "$?" != "0" ]; then echo "Woops!"; exit 1; fi
+    pip install -U pip; if [ "$?" != "0" ]; then echo "Woops!"; exit 1; fi
+    pip install requests --upgrade; if [ "$?" != "0" ]; then echo "Woops!"; exit 1; fi
     #pip install pyonpenssl --upgrade
 
     python setup.py clean --all
-    python setup.py install
+    python setup.py install; if [ "$?" != "0" ]; then echo "Woops!"; exit 1; fi
 
     if [ "$?" != "0" ]; then
         echo "Woops!"
