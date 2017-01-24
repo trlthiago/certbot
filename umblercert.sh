@@ -189,6 +189,7 @@ InstallAuto(){
     sudo chmod +x /tmp/certbot-auto
     /tmp/certbot-auto --non-interactive 
     cp /tmp/certbot-auto /usr/bin/certbot-auto
+    ConfigureRenewCron
 }
 
 DetectCertbot(){
